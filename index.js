@@ -83,7 +83,6 @@ addEventListener("fetch", async event => {
                     ) {
                         filteredHeaders[key] = value;
                     }
-                    filteredHeaders['Authorization'] = event.request.headers.get("api-auth-key");
                 }
 
                 const apiAuthKey = event.request.headers.get("api-auth-key");
@@ -97,6 +96,8 @@ addEventListener("fetch", async event => {
                         filteredHeaders[key] = value;
                     });
                 }
+
+                console.log(filteredHeaders);
 
                 const newRequest = new Request(event.request, {
                     redirect: "follow",
