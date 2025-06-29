@@ -76,17 +76,26 @@ addEventListener("fetch", async event => {
                 for (const [key, value] of event.request.headers.entries()) {
                     if (
                         (key.match("^origin") === null) &&
-                        (key.match("eferer") === null) &&
+                        (key.match("referer") === null) &&
                         (key.match("^cf-") === null) &&
                         (key.match("^x-forw") === null) &&
                         (key.match("^x-cors-headers") === null)
                     ) {
                         filteredHeaders[key] = value;
                     }
+                    filteredHeaders['Authorization'] = event.request.headers.get("api-auth-key");
                 }
 
+                const apiAuthKey = event.request.headers.get("api-auth-key");
+                if (apiAuthKey) {
+                    filteredHeaders['Authorization'] = apiAuthKey;
+                }
+                
+                // Handle custom headers
                 if (customHeaders !== null) {
-                    Object.entries(customHeaders).forEach((entry) => (filteredHeaders[entry[0]] = entry[1]));
+                    Object.entries(customHeaders).forEach(([key, value]) => {
+                        filteredHeaders[key] = value;
+                    });
                 }
 
                 const newRequest = new Request(event.request, {
