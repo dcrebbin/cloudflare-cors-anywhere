@@ -72,6 +72,19 @@ addEventListener("fetch", async event => {
             }
 
             if (originUrl.search.startsWith("?")) {
+                // Handle OPTIONS preflight immediately without proxying
+                if (isPreflightRequest) {
+                    const preflightHeaders = new Headers();
+                    preflightHeaders.set("Access-Control-Allow-Origin", event.request.headers.get("Origin") || "*");
+                    preflightHeaders.set("Access-Control-Allow-Methods", event.request.headers.get("access-control-request-method") || "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+                    const requestedHeaders = event.request.headers.get("access-control-request-headers");
+                    if (requestedHeaders) {
+                        preflightHeaders.set("Access-Control-Allow-Headers", requestedHeaders);
+                    }
+                    preflightHeaders.set("Access-Control-Max-Age", "86400");
+                    return new Response(null, { status: 200, statusText: "OK", headers: preflightHeaders });
+                }
+
                 const filteredHeaders = {};
                 for (const [key, value] of event.request.headers.entries()) {
                     if (
@@ -79,7 +92,9 @@ addEventListener("fetch", async event => {
                         (key.match("referer") === null) &&
                         (key.match("^cf-") === null) &&
                         (key.match("^x-forw") === null) &&
-                        (key.match("^x-cors-headers") === null)
+                        (key.match("^x-cors-headers") === null) &&
+                        (key.match("^access-control-") === null) &&
+                        (key.match("^sec-fetch-") === null)
                     ) {
                         filteredHeaders[key] = value;
                     }
@@ -118,12 +133,12 @@ addEventListener("fetch", async event => {
                 responseHeaders.set("Access-Control-Expose-Headers", exposedHeaders.join(","));
                 responseHeaders.set("cors-received-headers", JSON.stringify(allResponseHeaders));
 
-                const responseBody = isPreflightRequest ? null : await response.arrayBuffer();
+                const responseBody = await response.arrayBuffer();
 
                 const responseInit = {
                     headers: responseHeaders,
-                    status: isPreflightRequest ? 200 : response.status,
-                    statusText: isPreflightRequest ? "OK" : response.statusText
+                    status: response.status,
+                    statusText: response.statusText
                 };
                 return new Response(responseBody, responseInit);
 
