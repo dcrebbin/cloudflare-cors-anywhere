@@ -57,7 +57,7 @@ addEventListener("fetch", async event => {
             return headers;
         }
 
-        const targetUrl = decodeURIComponent(decodeURIComponent(originUrl.search.substr(1)));
+        const targetUrl = decodeURIComponent(originUrl.search.substr(1));
 
         const originHeader = event.request.headers.get("Origin");
         const connectingIp = event.request.headers.get("CF-Connecting-IP");
@@ -89,6 +89,7 @@ addEventListener("fetch", async event => {
                 for (const [key, value] of event.request.headers.entries()) {
                     if (
                         (key.match("^origin") === null) &&
+                        (key.match("^host$") === null) &&
                         (key.match("referer") === null) &&
                         (key.match("^cf-") === null) &&
                         (key.match("^x-forw") === null) &&
@@ -114,12 +115,14 @@ addEventListener("fetch", async event => {
 
                 console.log(filteredHeaders);
 
-                const newRequest = new Request(event.request, {
-                    redirect: "follow",
-                    headers: filteredHeaders
+                const newRequest = new Request(targetUrl, {
+                    method: event.request.method,
+                    headers: filteredHeaders,
+                    body: event.request.body,
+                    redirect: "follow"
                 });
 
-                const response = await fetch(targetUrl, newRequest);
+                const response = await fetch(newRequest);
                 let responseHeaders = new Headers(response.headers);
                 const exposedHeaders = [];
                 const allResponseHeaders = {};
